@@ -379,6 +379,24 @@ class TopologyGraph:
 
         return None, STATUS.NODE_NOT_FOUND
 
+    #should here create a dijkstra link instead of remove old link?
+    #def create_dij_link(self, path):
+
+    def delete_link(self, link):
+        
+        if link.begin in self.nodes:
+            logging.debug("Deleting out going link from {:X}".format(link.begin))
+
+            self.nodes[link.begin].remove_link_toID(link.end)
+
+            self.nodes[link.end].remove_link_fromID(link.begin)
+
+            self.__changed = True
+            self.__update_netgraph()
+            return deleted, STATUS.SUCCESS
+        return None, STATUS.LINK_NOT_FOUND
+
+
     # PRIVATE
 
     def __repr__(self):
@@ -390,6 +408,13 @@ class TopologyGraph:
             self.nodes[link.end].add_inlink(link)
         else:
             raise NSOException(STATUS.INVALID_LINK, "Begin or End node not registered!")
+
+    def __update_netgraph(self):
+        with open(NETGRAPH_PATH, 'w') as outfile:
+            if self.__changed:
+                self.__changed = False
+                self.__njg = self.tojson('netgraph')
+            json.dump(self.__njg, outfile)`
 
     def __device_monitor(self):
         next_call = time.time()
@@ -452,7 +477,7 @@ class TopologyGraph:
             try:
                 bsid = []   #get bsid list
                 clientid = [] #all clients' id
-                to_delete[] #link to delete
+                to_delete =[] #link to delete
                 bsid = [key for key in self.nodes if self.nodes[key].bs]
                 clientid = [key for key in self.nodes if not self.nodes[key].bs]
 
@@ -481,10 +506,9 @@ class TopologyGraph:
 
                 to_delete = list(set(all_links) - set(links))
 
-                for i in self.nodes:    #remove the links in to_delete from graph
-                    for l in to_delete:
-                        if l.begin == self.nodes[i].ID:
-                            self.nodes[i].remove_link_toID(l.end)
+                #remove the links in to_delete from graph
+                for l in to_delete:
+                    self.delete_link(l)
 
             except Exception as x:
                 logging.error(x)
