@@ -7,8 +7,6 @@ import random
 import threading
 import time
 import struct
-from collections import defaultdict
-from heapq import *
 
 from common.interop import Dptr
 
@@ -233,11 +231,7 @@ class Link:
     def get_reversed(self):
         return Link(self.begin, self.end, self.lq, self.intf_idx)
 
-    def up_lq(self):    #update lq for existing path
-        self.lq += 1
 
-    def down_lq(self):  #update lq for deleted path
-        self.lq -= 1    
 
 
 class TopologyGraph:
@@ -259,7 +253,6 @@ class TopologyGraph:
 
     def start_device_monitor(self):
         timerThread = threading.Thread(target=self.__device_monitor)
-        timerThread = threading.Thread(target=self.__dijstra_monitor)
         timerThread.daemon = True
         timerThread.start()
 
@@ -379,24 +372,6 @@ class TopologyGraph:
 
         return None, STATUS.NODE_NOT_FOUND
 
-    #should here create a dijkstra link instead of remove old link?
-    #def create_dij_link(self, path):
-
-    def delete_link(self, link):
-        
-        if link.begin in self.nodes:
-            logging.debug("Deleting out going link from {:X}".format(link.begin))
-
-            self.nodes[link.begin].remove_link_toID(link.end)
-
-            self.nodes[link.end].remove_link_fromID(link.begin)
-
-            self.__changed = True
-            self.__update_netgraph()
-            return deleted, STATUS.SUCCESS
-        return None, STATUS.LINK_NOT_FOUND
-
-
     # PRIVATE
 
     def __repr__(self):
@@ -408,13 +383,6 @@ class TopologyGraph:
             self.nodes[link.end].add_inlink(link)
         else:
             raise NSOException(STATUS.INVALID_LINK, "Begin or End node not registered!")
-
-    def __update_netgraph(self):
-        with open(NETGRAPH_PATH, 'w') as outfile:
-            if self.__changed:
-                self.__changed = False
-                self.__njg = self.tojson('netgraph')
-            json.dump(self.__njg, outfile)`
 
     def __device_monitor(self):
         next_call = time.time()
@@ -448,7 +416,7 @@ class TopologyGraph:
                             raise NSOException(STATUS.DEREGISTRATION_ERROR,
                                                "failed to de-register node {:X} from dptr {}".format(n, d))
 
-                    # TODO: deregister from vMME topo                    
+                    # TODO: deregister from vMME
                     # TODO:: remove routes
 
                     # delete node from topology
@@ -463,7 +431,18 @@ class TopologyGraph:
                 logging.debug('TopoMonitor: Released a lock')
 
             time.sleep(max(0, next_call - time.time()))
-    
+
+    def __update_netgraph(self):
+        with open(NETGRAPH_PATH, 'w') as outfile:
+            if self.__changed:
+                self.__changed = False
+                self.__njg = self.tojson('netgraph')
+            json.dump(self.__njg, outfile)
+
+
+
+
+#TODO: Add dijksta computation
 
     def __dijstra_monitor(self):
         next_call = time.time()
@@ -596,9 +575,7 @@ class TopologyGraph:
                     self.nodes[key].o_links[i].up_lq()
                     #print self.nodes[key].o_links[i].lq
                     p.pop(0)
-
-#TODO: Add dijksta computation
-
+                    
 ### Global variabble for the topology graph
 topo = TopologyGraph()
 
