@@ -444,6 +444,7 @@ class TopologyGraph:
 
 #TODO: Add dijksta computation
 
+
     def __dijstra_monitor(self):
         next_call = time.time()
         while True:
@@ -500,6 +501,21 @@ class TopologyGraph:
             time.sleep(max(0, next_call - time.time()))
 
 
+    def delete_link(self, link):
+        if link.begin in self.nodes:
+            logging.debug("Deleting link to node {:X}".format(link.end))
+
+            # delete links in node connected by incoming links
+
+            self.nodes[link.begin].remove_link_toID(link.end)
+
+            deleted = json.dumps(self.nodes[link.begin].tojson())
+
+            self.__changed = True
+            self.__update_netgraph()
+            return deleted, STATUS.SUCCESS
+
+        return None, STATUS.LINK_NOT_FOUND
 
 
     def dijkstra_out(self, startid, endid):
