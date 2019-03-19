@@ -1,0 +1,12 @@
+noinst_PROGRAMS=test_nso test_arp test_nbr test_fwd test_wifi
+test_nso_SOURCES=test_nso.c
+test_arp_SOURCES=test_arp.c
+test_nbr_SOURCES=test_nbr.c
+test_fwd_SOURCES=test_fwding.c
+test_wifi_SOURCES=test_wifi.c
+test_nso_LDADD=$(top_srcdir)/src/nso_lib/libnso.a
+test_arp_LDADD=$(top_srcdir)/src/nso_lib/libnso.a
+test_nbr_LDADD=$(top_srcdir)/src/nso_lib/libnso.a
+test_fwd_LDADD=$(top_srcdir)/src/nso_lib/libnso.a
+test_wifi_LDADD=$(top_srcdir)/src/nso_lib/libnso.a
+INCLUDES=-I$(top_srcdir)/src/nso_lib/include

@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+  
+  <head>
+    <title>Socket.IO chat</title>
+    
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 1; padding: 0; }
+      #messages li { padding: 5px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+      #devices tr:nth-child(even) {background: #CCC}
+      #devices tr:nth-child(odd) {background: #FFF}
+      
+    </style>
+
+  </head>
+
+
+  <body>
+    <table style="width:100%" id="devices">
+      <tr>
+        <th id="c">ID</th>
+        <th>IP:port</th> 
+        <th>Data</th>
+        <th>Action</th>
+      </tr>
+    </table>
+    <ul id="messages"></ul>
+    <!--<form action="">
+      <input id="m" autocomplete="off" /><button>Add</button>
+      </form> --!>
+  </body>
+
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  
+  <script>
+    var socket = io();
+
+    $(function () {
+      
+      var socket = io();
+      
+      $('form').submit(function(){
+        socket.emit('chat message', {id:$('#m').val()});
+        $('#m').val('');
+        return false;
+      });
+
+      
+
+      socket.on('chat message', function(msg){
+        //$('#messages').append($('<li>').text(msg));
+
+        if (document.getElementById('id-'+msg.id) != null) {
+          document.getElementById('addr-'+msg.id).innerHTML = msg.addr;
+          document.getElementById('data-'+msg.id).innerHTML = msg.data;
+        }
+        else { 
+          $('#devices').append(
+            $('<tr>')
+            .append($('<th>').text(msg.id).attr('id', 'id-'+msg.id))
+            .append($('<th>').text(msg.addr).attr('id', 'addr-'+msg.id))
+            .append($('<th>').text(msg.data).attr('id', 'data-'+msg.id))
+            .append(
+              $('<th>')
+              .append(
+                $('<button>')
+                .text('Start')
+                .attr('onclick',"deviceAction('"+msg.id+"','start')")
+                .attr('id', 'btn-'+msg.id)
+              )
+              .append(
+                $('<button>')
+                .text('Stop')
+                .attr('onclick',"deviceAction('"+msg.id+"','stop')")
+                .attr('id', 'btn-'+msg.id)
+              )
+            )
+          );
+        }
+      });
+
+
+    });
+
+
+    function deviceAction(devId, devCmd){
+        //document.getElementById("c").innerHTML = "DIOCANE";
+        var arg = {id: devId, cmd: devCmd}
+        console.log("action on: "+arg);
+        socket.emit('action message', arg);
+    };
+
+  </script>
+          
+</html>
