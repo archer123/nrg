@@ -7,6 +7,8 @@ import random
 import threading
 import time
 import struct
+from collections import defaultdict
+from heapq import *
 
 from common.interop import Dptr
 
@@ -37,6 +39,7 @@ class Node:
                     self.o_links.append(l)
             self.i_links = []
             self.dptr = _dptr
+            self.next_stop = []
 
         except AssertionError:
             raise NSOException(STATUS.INVALID_NODE_ID, "ID must be an integer, found {}".format(type(_ID)))
@@ -98,6 +101,12 @@ class Node:
             logging.debug("Updating incoming link {:X}<-{:X} (intf {:X})".format(l.end, l.begin, l.intf_idx))
         else:
             logging.warning("No changes made on incoming {:X}<-{:X} (intf {:X})".format(l.end, l.begin, l.intf_idx))
+
+    def add_next_stop(self, dic):    #add node id in next stop list
+        self.next_stop.append(dic)
+
+    def remove_next_stop(self, dic): #remove node id in next stop list
+        self.next_stop.remove(dic)        
 
 
     def tojson(self, type='full'):
@@ -444,16 +453,15 @@ class TopologyGraph:
 
 #TODO: Add dijksta computation
 
-
     def __dijstra_monitor(self):
         next_call = time.time()
         while True:
             logging.debug("checking nodes...")
             # setup next call
             next_call = next_call + (self.ntup * self.alpha)
-            logging.debug("TopoMonitor: waiting for lock")
+            logging.debug("DijMonitor: waiting for lock")
             lock.acquire()
-            logging.debug("TopoMonitor: lock acquired")
+            logging.debug("DijMonitor: lock acquired")
             try:
                 bsid = []   #get bsid list
                 clientid = [] #all clients' id
@@ -466,29 +474,17 @@ class TopologyGraph:
                 for base in bsid:
                     for client in clientid:
                         paths.append(self.dijkstra_out(base, client)[1])
-                        self.update_quality(paths[-1])  #update quality every time we find a shortest path
+                        self.update_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
 
-                links = []  #record dijkstra links here to make sure the quality has been updated
-                all_links = []  #record all links
-                for path in paths:  
-                    p = list(path)
-                    for key in self.nodes:
+                for path in paths:
+                    for n in self.nodes:
+                        for i in range(0, len(path)-1):
+                            if path[i] == n :
+                                dic = dict()
+                                dic = {path[-1]: path[i+1]}
+                                self.nodes[n].add_next_stop(dic)
 
-                        for i in range(0, len(self.nodes[key].o_links)):
-                            if self.nodes[key].o_links not in all_links:
-
-                                all_links.append(self.nodes[key].o_links[i])
-
-                            for j in range (0, len(p)-1):
-                                if (self.nodes[key].o_links[i].begin == p[j] and self.nodes[key].o_links[i].end == p[j+1] and self.nodes[key].o_links[i] not in links):
-                                    
-                                    links.append(self.nodes[key].o_links[i])
-
-                to_delete = list(set(all_links) - set(links))
-
-                #remove the links in to_delete from graph
-                for l in to_delete:
-                    self.delete_link(l)
+                
 
             except Exception as x:
                 logging.error(x)
@@ -500,22 +496,6 @@ class TopologyGraph:
 
             time.sleep(max(0, next_call - time.time()))
 
-
-    def delete_link(self, link):
-        if link.begin in self.nodes:
-            logging.debug("Deleting link to node {:X}".format(link.end))
-
-            # delete links in node connected by incoming links
-
-            self.nodes[link.begin].remove_link_toID(link.end)
-
-            deleted = json.dumps(self.nodes[link.begin].tojson())
-
-            self.__changed = True
-            self.__update_netgraph()
-            return deleted, STATUS.SUCCESS
-
-        return None, STATUS.LINK_NOT_FOUND
 
 
     def dijkstra_out(self, startid, endid):
