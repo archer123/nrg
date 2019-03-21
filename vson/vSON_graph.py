@@ -272,6 +272,11 @@ class TopologyGraph:
         timerThread.daemon = True
         timerThread.start()
 
+    def start_dijkstra_monitor(self):
+        timerThread = threading.Thread(target=self.__dijstra_monitor)
+        timerThread.daemon = True
+        timerThread.start()
+
     # Acces to graph operations
 
     def isNodeRegistered(self, ID):
@@ -479,8 +484,8 @@ class TopologyGraph:
                 
                 for base in bsid:
                     for client in clientid:
-                        paths.append(self.dijkstra_out(base, client)[1])
-                        self.update_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
+                        paths_out.append(self.dijkstra_out(base, client)[1])
+                        self.update_quality(paths_out[-1])  #update quality every time we find a shortest path for every node in graph
 
                 for path in paths_out:
                     for n in self.nodes:
@@ -495,8 +500,8 @@ class TopologyGraph:
                 
                 for base in bsid:
                     for client in clientid:
-                        paths.append(self.dijkstra_in(base, client)[1])
-                        self.update_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
+                        paths_in.append(self.dijkstra_in(base, client)[1])
+                        self.update_quality(paths_in[-1])  #update quality every time we find a shortest path for every node in graph
 
                 for path in paths_in:
                     for n in self.nodes:
