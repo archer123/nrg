@@ -39,7 +39,8 @@ class Node:
                     self.o_links.append(l)
             self.i_links = []
             self.dptr = _dptr
-            self.next_stop = []
+            self.next_in_stop = []
+            self.next_out_stop = []
 
         except AssertionError:
             raise NSOException(STATUS.INVALID_NODE_ID, "ID must be an integer, found {}".format(type(_ID)))
@@ -102,11 +103,17 @@ class Node:
         else:
             logging.warning("No changes made on incoming {:X}<-{:X} (intf {:X})".format(l.end, l.begin, l.intf_idx))
 
-    def add_next_stop(self, dic):    #add node id in next stop list
-        self.next_stop.append(dic)
+    def add_next_in_stop(self, dic):    #add node id in next stop list for input link
+        self.next_in_stop.append(dic)
 
-    def remove_next_stop(self, dic): #remove node id in next stop list
-        self.next_stop.remove(dic)        
+    def remove_next_in_stop(self, dic): #remove node id in next stop list
+        self.next_in_stop.remove(dic)    
+
+    def add_next_out_stop(self, dic):    #add node id in next stop list for output link
+        self.next_out_stop.append(dic)
+
+    def remove_next_out_stop(self, dic): #remove node id in next stop list
+        self.next_out_stop.remove(dic)      
 
 
     def tojson(self, type='full'):
@@ -465,24 +472,39 @@ class TopologyGraph:
             try:
                 bsid = []   #get bsid list
                 clientid = [] #all clients' id
-                to_delete =[] #link to delete
                 bsid = [key for key in self.nodes if self.nodes[key].bs]
                 clientid = [key for key in self.nodes if not self.nodes[key].bs]
 
-                paths = []  #get all paths
+                paths_out = []  #get all paths
                 
                 for base in bsid:
                     for client in clientid:
                         paths.append(self.dijkstra_out(base, client)[1])
                         self.update_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
 
-                for path in paths:
+                for path in paths_out:
                     for n in self.nodes:
                         for i in range(0, len(path)-1):
                             if path[i] == n :
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
-                                self.nodes[n].add_next_stop(dic)
+                                self.nodes[n].add_next_out_stop(dic)
+
+
+                paths_in = []  #get all paths
+                
+                for base in bsid:
+                    for client in clientid:
+                        paths.append(self.dijkstra_in(base, client)[1])
+                        self.update_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
+
+                for path in paths_in:
+                    for n in self.nodes:
+                        for i in range(0, len(path)-1):
+                            if path[i] == n :
+                                dic = dict()
+                                dic = {path[-1]: path[i+1]}
+                                self.nodes[n].add_next_in_stop(dic)
 
                 
 
@@ -507,26 +529,26 @@ class TopologyGraph:
                 bsid = self.nodes[key].ID
                 #print self.nodes[key].o_links[0].begin
 
-            for link in self.nodes[key].o_links:
+            for link in self.nodes[key].o_links:    #for out link
                 g[link.begin].append((link.lq,link.end))
 
             
 
         q, seen, dist = [(0,startid,())], set(), {startid: bsid}
         while q:
-            (cost,v1,path) = heappop(q)
-            if v1 in seen: 
+            (cost,n1,path) = heappop(q)
+            if n1 in seen: 
                 continue
-            seen.add(v1)
-            path += (v1,)
-            if v1 == endid:    #reach the end node
+            seen.add(n1)
+            path += (n1,)
+            if n1 == endid:    #reach the end node
                 return (cost, path)
-            for c, v2 in g.get(v1):
-                if v2 in seen: 
+            for c, n2 in g.get(n1):
+                if n2 in seen: 
                     continue
-                if v2 not in dist or cost+c < dist[v2]:
-                    dist[v2] = cost+c
-                    heappush(q, (cost+c, v2, path))
+                if n2 not in dist or cost+c < dist[n2]:
+                    dist[n2] = cost+c
+                    heappush(q, (cost+c, n2, path))
 
         return float("inf")
 
@@ -539,26 +561,26 @@ class TopologyGraph:
                 bsid = self.nodes[key].ID
                 #print self.nodes[key].i_links[0].begin
 
-            for link in self.nodes[key].i_links:
+            for link in self.nodes[key].i_links:    #for in link
                 g[link.begin].append((link.lq,link.end))
 
             
 
         q, seen, dist = [(0,startid,())], set(), {startid: bsid}
         while q:
-            (cost,v1,path) = heappop(q)
-            if v1 in seen: 
+            (cost,n1,path) = heappop(q)
+            if n1 in seen: 
                 continue
-            seen.add(v1)
-            path += (v1,)
-            if v1 == endid:    #reach the end node
+            seen.add(n1)
+            path += (n1,)
+            if n1 == endid:    #reach the end node
                 return (cost, path)
-            for c, v2 in g.get(v1):
-                if v2 in seen: 
+            for c, n2 in g.get(n1):
+                if n2 in seen: 
                     continue
-                if v2 not in dist or cost+c < dist[v2]:
-                    dist[v2] = cost+c
-                    heappush(q, (cost+c, v2, path))
+                if n2 not in dist or cost+c < dist[n2]:
+                    dist[n2] = cost+c
+                    heappush(q, (cost+c, n2, path))
 
         return float("inf")
 
@@ -570,7 +592,7 @@ class TopologyGraph:
                     #print self.nodes[key].o_links[i].lq
                     self.nodes[key].o_links[i].up_lq()
                     #print self.nodes[key].o_links[i].lq
-                    p.pop(0)
+                    p.pop(0)    # remove the first node
                     
 ### Global variabble for the topology graph
 topo = TopologyGraph()
