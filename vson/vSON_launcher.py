@@ -43,9 +43,9 @@ if __name__ == "__main__":
 
     logging.info("Starting Device Monitor deamon...")
     topo.start_device_monitor()
-    
-    logging.info("Starting Dijkstra Monitor deamon...")
-    topo.start_dijkstra_monitor()
+
+    # logging.info("Starting Dijkstra Monitor deamon...")
+    # topo.start_dijkstra_monitor()
 
     logging.info("Starting Nortbound Rest Interface...")
     RESTfulAPI(args.api_port)
