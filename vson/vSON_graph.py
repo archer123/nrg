@@ -535,7 +535,7 @@ class TopologyGraph:
             for link in self.nodes[key].o_links:    #for out link
                 g[link.begin].append((link.lq,link.end))
 
-        print g
+        logging.debug('g is : '.format(g))
 
         q, seen, dist = [(0,startid,())], set(), {startid: bsid}
         while q:
