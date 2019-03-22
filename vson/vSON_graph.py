@@ -130,8 +130,8 @@ class Node:
                 'n_nbrs': self.M,
                 'o_links': [],
                 'i_links': [],
-                'next_in_stop': self.next_in_stop,
-                'next_out_stop': self.next_out_stop,
+                'next_in_stop': json.dumps(self.next_in_stop),
+                'next_out_stop': json.dumps(self.next_out_stop),
                 'base_station': bool(self.bs)
             }
 
@@ -489,8 +489,7 @@ class TopologyGraph:
                 for base in bsid:
                     for client in clientid:
                         paths.append(self.dijkstra_out(base, client)[1])
-                        if self.__changed:
-                            self.update_out_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
+                        self.update_out_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
 
                 for path in paths:
                     for n in self.nodes:
@@ -499,7 +498,6 @@ class TopologyGraph:
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
                                 if dic not in self.nodes[n].next_out_stop:
-
                                     self.nodes[n].add_next_out_stop(dic)
 
 
@@ -508,8 +506,7 @@ class TopologyGraph:
                 for base in bsid:
                     for client in clientid:
                         paths_in.append(self.dijkstra_in(base, client)[1])
-                        if self.__changed:
-                            self.update_in_quality(paths_in[-1])  #update quality every time we find a shortest path for every node in graph
+                        self.update_in_quality(paths_in[-1])  #update quality every time we find a shortest path for every node in graph
 
                 for path in paths_in:
                     for n in self.nodes:
@@ -518,7 +515,6 @@ class TopologyGraph:
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
                                 if dic not in self.nodes[n].next_in_stop:
-
                                     self.nodes[n].add_next_in_stop(dic)
 
             except Exception as x:
@@ -598,25 +594,23 @@ class TopologyGraph:
         return float("inf")
 
     def update_out_quality(self, path):
-        p = list(path)
-        for key in self.nodes:
-            for i in range(0, len(self.nodes[key].o_links)):
-                if self.nodes[key].o_links[i].begin == p[0] and self.nodes[key].o_links[i].end == p[1] and len(p) > 2:
-                    #print self.nodes[key].o_links[i].lq
-                    self.nodes[key].o_links[i].up_lq()
-                    #print self.nodes[key].o_links[i].lq
-                    p.pop(0)    # remove the first node
+        if self.__changed:
+            p = list(path)
+            for key in self.nodes:
+                for i in range(0, len(self.nodes[key].o_links)):
+                    if self.nodes[key].o_links[i].begin == p[0] and self.nodes[key].o_links[i].end == p[1] and len(p) > 2:
+                        self.nodes[key].o_links[i].up_lq()
+                        p.pop(0)    # remove the first node
 
 
     def update_in_quality(self, path):
-        p = list(path)
-        for key in self.nodes:
-            for i in range(0, len(self.nodes[key].i_links)):
-                if self.nodes[key].i_links[i].begin == p[0] and self.nodes[key].i_links[i].end == p[1] and len(p) > 2:
-                    #print self.nodes[key].o_links[i].lq
-                    self.nodes[key].i_links[i].up_lq()
-                    #print self.nodes[key].o_links[i].lq
-                    p.pop(0)    # remove the first node
+        if self.__changed:
+            p = list(path)
+            for key in self.nodes:
+                for i in range(0, len(self.nodes[key].i_links)):
+                    if self.nodes[key].i_links[i].begin == p[0] and self.nodes[key].i_links[i].end == p[1] and len(p) > 2:
+                        self.nodes[key].i_links[i].up_lq()
+                        p.pop(0)    # remove the first node
 
 ### Global variabble for the topology graph
 topo = TopologyGraph()
