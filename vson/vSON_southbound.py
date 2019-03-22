@@ -127,12 +127,18 @@ class vson(object):
             logging.debug("Unpacking header {}".format(" ".join("{:02X}".format(ord(c)) for c in nso_hdr)))
             try:
                 src, dst, proto, length = struct.unpack("!QQHH", nso_hdr)
+                logging.debug("NSO_HDR print: {}".format(src, dst, proto,length))
             except struct.error:
-                raise NSOException(STATUS.SOUTHBOUND_NOT_NSO, 'received a non NSO packet')
+
+                logging.debug("Unknown NSO_HDR print: {}".format(src," ", dst," ", proto," ", length))
+
+                raise NSOException(STATUS.SOUTHBOUND_NOT_NSO, 'received a# non NSO packet')
 
             return (src, dst, proto, length, nso_hdr)
 
         else:
+            logging.debug("Length incorrect NSO_HDR print: {}".format(len(nso_hdr)))
+
             raise NSOException(STATUS.SOUTHBOUND_NOT_NSO, 'received a non NSO packet')
 
 
