@@ -498,7 +498,7 @@ class TopologyGraph:
                             if path[i] == n :
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
-                                self.nodes[n].add_next_out_stop(dic)
+                                self.add_next_out_stop(n,dic)
 
 
                 paths_in = []  #get all paths
@@ -514,7 +514,7 @@ class TopologyGraph:
                             if path[i] == n :
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
-                                self.nodes[n].add_next_in_stop(dic)
+                                self.add_next_in_stop(n,dic)
 
             except Exception as x:
                 logging.error(x)
