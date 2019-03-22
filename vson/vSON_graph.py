@@ -103,17 +103,17 @@ class Node:
         else:
             logging.warning("No changes made on incoming {:X}<-{:X} (intf {:X})".format(l.end, l.begin, l.intf_idx))
 
-    def add_next_in_stop(self, dic):    #add node id in next stop list for input link
-        self.next_in_stop.append(dic)
-
-    def remove_next_in_stop(self, dic): #remove node id in next stop list
-        self.next_in_stop.remove(dic)
-
-    def add_next_out_stop(self, dic):    #add node id in next stop list for output link
-        self.next_out_stop.append(dic)
-
-    def remove_next_out_stop(self, dic): #remove node id in next stop list
-        self.next_out_stop.remove(dic)
+    # def add_next_in_stop(self, dic):    #add node id in next stop list for input link
+    #     self.next_in_stop.append(dic)
+    #
+    # def remove_next_in_stop(self, dic): #remove node id in next stop list
+    #     self.next_in_stop.remove(dic)
+    #
+    # def add_next_out_stop(self, dic):    #add node id in next stop list for output link
+    #     self.next_out_stop.append(dic)
+    #
+    # def remove_next_out_stop(self, dic): #remove node id in next stop list
+    #     self.next_out_stop.remove(dic)
 
 
     def tojson(self, type='full'):
@@ -498,8 +498,7 @@ class TopologyGraph:
                             if path[i] == n :
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
-                                if dic not in self.nodes[n].next_out_stop:
-                                    self.nodes[n].add_next_out_stop(dic)
+                                self.nodes[n].add_next_out_stop(dic)
 
 
                 paths_in = []  #get all paths
@@ -515,8 +514,7 @@ class TopologyGraph:
                             if path[i] == n :
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
-                                if dic not in self.nodes[n].next_in_stop:
-                                    self.nodes[n].add_next_in_stop(dic)
+                                self.nodes[n].add_next_in_stop(dic)
 
             except Exception as x:
                 logging.error(x)
@@ -601,5 +599,23 @@ class TopologyGraph:
                         self.nodes[key].i_links[i].up_lq()
                         p.pop(0)    # remove the first node
 
+
+
+    def add_next_in_stop(self, ID,  dic):
+        if self.__changed:
+            self.nodes[ID].next_in_stop.append(dic)
+
+    def add_next_out_stop(self, ID,  dic):
+        if self.__changed:
+            self.nodes[ID].next_out_stop.append(dic)
+
+
+    def remove_next_in_stop(self, ID,  dic):
+        if self.__changed:
+            self.nodes[ID].next_in_stop.remove(dic)
+
+    def remove_next_out_stop(self, ID,  dic):
+        if self.__changed:
+            self.nodes[ID].next_out_stop.remove(dic)
 ### Global variabble for the topology graph
 topo = TopologyGraph()
