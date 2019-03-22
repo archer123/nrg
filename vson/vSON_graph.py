@@ -107,13 +107,13 @@ class Node:
         self.next_in_stop.append(dic)
 
     def remove_next_in_stop(self, dic): #remove node id in next stop list
-        self.next_in_stop.remove(dic)    
+        self.next_in_stop.remove(dic)
 
     def add_next_out_stop(self, dic):    #add node id in next stop list for output link
         self.next_out_stop.append(dic)
 
     def remove_next_out_stop(self, dic): #remove node id in next stop list
-        self.next_out_stop.remove(dic)      
+        self.next_out_stop.remove(dic)
 
 
     def tojson(self, type='full'):
@@ -159,8 +159,8 @@ class Node:
                     'interfaces': self.N,
                     'neigbours': self.M,
                     'nbrs_lst': [],
-                    'next_out_stop':self.next_out_stop,
-                    'next_in_stop':self.next_in_stop,
+                    'next_in_stop':json.dumps(self.next_in_stop),
+                    'next_out_stop': json.dumps(self.next_out_stop),
                     'base_station': bool(self.bs)
 
                 }
@@ -280,7 +280,6 @@ class TopologyGraph:
         timerThread = threading.Thread(target=self.__dijstra_monitor)
         timerThread.daemon = True
         timerThread.start()
-
     # Acces to graph operations
 
     def isNodeRegistered(self, ID):
@@ -478,34 +477,39 @@ class TopologyGraph:
             logging.debug("DijMonitor: waiting for lock")
             lock.acquire()
             logging.debug("DijMonitor: lock acquired")
+
             try:
                 bsid = []   #get bsid list
                 clientid = [] #all clients' id
                 bsid = [key for key in self.nodes if self.nodes[key].bs]
                 clientid = [key for key in self.nodes if not self.nodes[key].bs]
 
-                paths_out = []  #get all paths
-                
+                paths = []  #get all paths
+
                 for base in bsid:
                     for client in clientid:
-                        paths_out.append(self.dijkstra_out(base, client)[1])
-                        self.update_quality(paths_out[-1])  #update quality every time we find a shortest path for every node in graph
+                        paths.append(self.dijkstra_out(base, client)[1])
+                        if self.__changed:
+                            self.update_out_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
 
-                for path in paths_out:
+                for path in paths:
                     for n in self.nodes:
                         for i in range(0, len(path)-1):
                             if path[i] == n :
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
-                                self.nodes[n].add_next_out_stop(dic)
+                                if dic not in self.nodes[n].next_out_stop:
+
+                                    self.nodes[n].add_next_out_stop(dic)
 
 
                 paths_in = []  #get all paths
-                
+
                 for base in bsid:
                     for client in clientid:
                         paths_in.append(self.dijkstra_in(base, client)[1])
-                        self.update_quality(paths_in[-1])  #update quality every time we find a shortest path for every node in graph
+                        if self.__changed:
+                            self.update_in_quality(paths_in[-1])  #update quality every time we find a shortest path for every node in graph
 
                 for path in paths_in:
                     for n in self.nodes:
@@ -513,9 +517,9 @@ class TopologyGraph:
                             if path[i] == n :
                                 dic = dict()
                                 dic = {path[-1]: path[i+1]}
-                                self.nodes[n].add_next_in_stop(dic)
+                                if dic not in self.nodes[n].next_in_stop:
 
-                
+                                    self.nodes[n].add_next_in_stop(dic)
 
             except Exception as x:
                 logging.error(x)
@@ -541,19 +545,19 @@ class TopologyGraph:
             for link in self.nodes[key].o_links:    #for out link
                 g[link.begin].append((link.lq,link.end))
 
-            
+
 
         q, seen, dist = [(0,startid,())], set(), {startid: bsid}
         while q:
             (cost,n1,path) = heappop(q)
-            if n1 in seen: 
+            if n1 in seen:
                 continue
             seen.add(n1)
             path += (n1,)
             if n1 == endid:    #reach the end node
                 return (cost, path)
             for c, n2 in g.get(n1):
-                if n2 in seen: 
+                if n2 in seen:
                     continue
                 if n2 not in dist or cost+c < dist[n2]:
                     dist[n2] = cost+c
@@ -573,19 +577,19 @@ class TopologyGraph:
             for link in self.nodes[key].i_links:    #for in link
                 g[link.begin].append((link.lq,link.end))
 
-            
+
 
         q, seen, dist = [(0,startid,())], set(), {startid: bsid}
         while q:
             (cost,n1,path) = heappop(q)
-            if n1 in seen: 
+            if n1 in seen:
                 continue
             seen.add(n1)
             path += (n1,)
             if n1 == endid:    #reach the end node
                 return (cost, path)
             for c, n2 in g.get(n1):
-                if n2 in seen: 
+                if n2 in seen:
                     continue
                 if n2 not in dist or cost+c < dist[n2]:
                     dist[n2] = cost+c
@@ -593,7 +597,7 @@ class TopologyGraph:
 
         return float("inf")
 
-    def update_quality(self, path):
+    def update_out_quality(self, path):
         p = list(path)
         for key in self.nodes:
             for i in range(0, len(self.nodes[key].o_links)):
@@ -602,7 +606,17 @@ class TopologyGraph:
                     self.nodes[key].o_links[i].up_lq()
                     #print self.nodes[key].o_links[i].lq
                     p.pop(0)    # remove the first node
-                    
+
+
+    def update_in_quality(self, path):
+        p = list(path)
+        for key in self.nodes:
+            for i in range(0, len(self.nodes[key].i_links)):
+                if self.nodes[key].i_links[i].begin == p[0] and self.nodes[key].i_links[i].end == p[1] and len(p) > 2:
+                    #print self.nodes[key].o_links[i].lq
+                    self.nodes[key].i_links[i].up_lq()
+                    #print self.nodes[key].o_links[i].lq
+                    p.pop(0)    # remove the first node
+
 ### Global variabble for the topology graph
 topo = TopologyGraph()
-

@@ -54,9 +54,9 @@ popd
 echo "start DPTR"
 sleep 1
 
-#pushd $BS/src/bs_app
-#./bs_app ../../config/config_example &> $RT_PATH/nrg5-log/bs.log &
-#popd
+pushd $BS/src/bs_app
+./bs_app ../../config/config_example &> $RT_PATH/nrg5-log/bs.log &
+popd
 
 echo "start base station"
 
