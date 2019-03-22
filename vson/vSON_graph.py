@@ -130,6 +130,8 @@ class Node:
                 'n_nbrs': self.M,
                 'o_links': [],
                 'i_links': [],
+                'next_in_stop': self.next_in_stop,
+                'next_out_stop': self.next_out_stop,
                 'base_station': bool(self.bs)
             }
 
@@ -141,6 +143,7 @@ class Node:
 
             for i in self.i_links:
                 r['i_links'].append(i.tojson(type))
+
 
 
         if type == 'netgraph':
@@ -156,6 +159,8 @@ class Node:
                     'interfaces': self.N,
                     'neigbours': self.M,
                     'nbrs_lst': [],
+                    'next_out_stop':self.next_out_stop,
+                    'next_in_stop':self.next_in_stop,
                     'base_station': bool(self.bs)
 
                 }
@@ -164,7 +169,6 @@ class Node:
 
             for i in self.o_links:
                 r['properties']['nbrs_lst'].append(hex(i.end))
-
 
 
         return r
