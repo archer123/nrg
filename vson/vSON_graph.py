@@ -489,6 +489,7 @@ class TopologyGraph:
                 for base in bsid:
                     for client in clientid:
                         paths.append(self.dijkstra_out(base, client)[1])
+
                         self.update_out_quality(paths[-1])  #update quality every time we find a shortest path for every node in graph
 
                 for path in paths:
@@ -531,13 +532,8 @@ class TopologyGraph:
 
     def dijkstra_out(self, startid, endid):
         g = defaultdict(list)
-        bsid = 0
+        bsid = startid
         for key in self.nodes:
-            #print (key+"+"+self.nodes[key].ID)
-            if self.nodes[key].bs :
-                bsid = self.nodes[key].ID
-                #print self.nodes[key].o_links[0].begin
-
             for link in self.nodes[key].o_links:    #for out link
                 g[link.begin].append((link.lq,link.end))
 
@@ -563,17 +559,10 @@ class TopologyGraph:
 
     def dijkstra_in(self, startid, endid):
         g = defaultdict(list)
-        bsid = 0
+        bsid = startid
         for key in self.nodes:
-            #print (key+"+"+self.nodes[key].ID)
-            if self.nodes[key].bs :
-                bsid = self.nodes[key].ID
-                #print self.nodes[key].i_links[0].begin
-
             for link in self.nodes[key].i_links:    #for in link
                 g[link.begin].append((link.lq,link.end))
-
-
 
         q, seen, dist = [(0,startid,())], set(), {startid: bsid}
         while q:
